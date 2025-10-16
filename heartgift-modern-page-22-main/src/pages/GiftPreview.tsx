@@ -29,7 +29,6 @@ const GiftPreview = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [giftData, setGiftData] = useState<CustomGiftData | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showQR, setShowQR] = useState(false);
 
@@ -40,7 +39,17 @@ const GiftPreview = () => {
     // Simula carregamento dos dados
     const timer = setTimeout(() => {
       if (location.state?.giftData) {
-        setGiftData(location.state.giftData as CustomGiftData);
+        const data = location.state.giftData as CustomGiftData;
+        setGiftData({
+          ...data,
+          // Garante que todos os campos tenham valores padrão
+          photos: data.photos || [],
+          photoUrls: data.photoUrls || [],
+          customizationData: data.customizationData || {},
+          selectedFrame: data.selectedFrame || 'classic',
+          textStyle: data.textStyle || 'romantic',
+          musicUrl: data.musicUrl || data.spotifyTrack?.preview_url || null
+        });
         setShowQR(location.state.showQR || false);
       } else {
         // Dados de exemplo caso não venha do estado
@@ -53,8 +62,11 @@ const GiftPreview = () => {
           backgroundColor: '#ff6b9d',
           textColor: '#ffffff',
           photos: [],
+          photoUrls: [],
+          customizationData: {},
           selectedFrame: 'classic',
-          textStyle: 'romantic'
+          textStyle: 'romantic',
+          musicUrl: null
         });
       }
       setIsLoading(false);
@@ -63,20 +75,22 @@ const GiftPreview = () => {
     return () => clearTimeout(timer);
   }, [location.state]);
 
-  /**
-   * Atualiza os dados customizados do presente
-   */
-  const handleGiftUpdate = (updatedData: Partial<CustomGiftData>) => {
-    if (giftData) {
-      setGiftData({ ...giftData, ...updatedData });
-    }
-  };
 
   /**
    * Navega de volta para a criação
    */
   const handleGoBack = () => {
-    navigate('/criar-presente');
+    if (giftData) {
+      // Navega de volta com os dados atuais para continuar editando
+      navigate('/criar-presente', { 
+        state: { 
+          giftData: giftData,
+          continueEditing: true 
+        } 
+      });
+    } else {
+      navigate('/criar-presente');
+    }
   };
 
   /**
@@ -116,7 +130,7 @@ const GiftPreview = () => {
 
     const layoutProps = {
       giftData,
-      onUpdate: handleGiftUpdate
+      onUpdate: () => {} // Função vazia pois não há edição direta
     };
 
     switch (giftData.theme) {
@@ -246,11 +260,11 @@ const GiftPreview = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsEditing(!isEditing)}
-                className="hidden sm:flex items-center gap-2"
+                onClick={handleGoBack}
+                className="flex items-center gap-2 hover:bg-primary/10 transition-colors"
               >
                 <Edit3 size={16} />
-                {isEditing ? 'Finalizar' : 'Personalizar'}
+                <span className="hidden sm:inline">Editar Presente</span>
               </Button>
             )}
             
@@ -280,7 +294,7 @@ const GiftPreview = () => {
               variant="outline"
               size="sm"
               onClick={handleShare}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 hover:bg-primary/10 transition-colors"
             >
               <Share2 size={16} />
               <span className="hidden sm:inline">Compartilhar</span>
@@ -290,7 +304,7 @@ const GiftPreview = () => {
               variant="outline"
               size="sm"
               onClick={handleDownload}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 hover:bg-primary/10 transition-colors"
             >
               <Download size={16} />
               <span className="hidden sm:inline">Salvar</span>
@@ -306,20 +320,10 @@ const GiftPreview = () => {
           <QRCodeGenerator giftData={giftData} />
         ) : (
           <div className="max-w-7xl mx-auto p-4">
-            <div className={`grid ${isEditing ? 'lg:grid-cols-4' : 'grid-cols-1'} gap-6`}>
+            <div className="grid grid-cols-1 gap-6">
               
-              {/* Painel de personalização (apenas quando editando) */}
-              {isEditing && (
-                <div className="lg:col-span-1">
-                  <GiftCustomizer
-                    giftData={giftData}
-                    onUpdate={handleGiftUpdate}
-                  />
-                </div>
-              )}
-
-              {/* Área do presente - Preview completo quando não editando */}
-              <div className={`${isEditing ? 'lg:col-span-3' : 'col-span-1'}`}>
+              {/* Área do presente - Preview completo */}
+              <div className="col-span-1">
                 <div className="relative">
                   {renderGiftLayout()}
                 </div>

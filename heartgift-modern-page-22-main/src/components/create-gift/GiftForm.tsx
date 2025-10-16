@@ -28,6 +28,7 @@ interface ThemeConfig {
 interface GiftFormProps {
   theme: ThemeType;
   themeConfig: ThemeConfig;
+  initialData?: GiftData | null;
   onComplete: (data: GiftData) => void;
 }
 
@@ -35,25 +36,27 @@ interface GiftFormProps {
  * Formulário para personalização do presente digital
  * Permite configurar todos os aspectos visuais e funcionais do presente
  */
-const GiftForm = ({ theme, themeConfig, onComplete }: GiftFormProps) => {
+const GiftForm = ({ theme, themeConfig, initialData, onComplete }: GiftFormProps) => {
   const navigate = useNavigate();
   const { selectedPlan, isPlanFeatureAllowed, getPlanFeatures } = usePlan();
   const photosInputRef = useRef<HTMLInputElement>(null);
   
   // Estado do formulário
   const [formData, setFormData] = useState<Partial<GiftData>>({
-    theme,
-    recipientName: '',
-    senderName: '',
-    message: '',
-    specialDate: '',
-    backgroundColor: theme === 'couple' ? '#ff6b9d' : theme === 'birthday' ? '#4ecdc4' : '#6366f1',
-    textColor: '#ffffff'
+    theme: initialData?.theme || theme,
+    recipientName: initialData?.recipientName || '',
+    senderName: initialData?.senderName || '',
+    message: initialData?.message || '',
+    specialDate: initialData?.specialDate || '',
+    backgroundColor: initialData?.backgroundColor || (theme === 'couple' ? '#ff6b9d' : theme === 'birthday' ? '#4ecdc4' : '#6366f1'),
+    textColor: initialData?.textColor || '#ffffff'
   });
 
-  const [selectedSpotifyTrack, setSelectedSpotifyTrack] = useState<any>(null);
-  const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
+  const [selectedSpotifyTrack, setSelectedSpotifyTrack] = useState<any>(initialData?.spotifyTrack || null);
+  const [uploadedPhotos, setUploadedPhotos] = useState<File[]>(initialData?.photos || []);
+  const [photoUrls, setPhotoUrls] = useState<string[]>(initialData?.photoUrls || []);
   const [showCustomizer, setShowCustomizer] = useState(true); // Personalização automática
+  const [customizationData, setCustomizationData] = useState<any>(initialData?.customizationData || {});
 
   const planFeatures = getPlanFeatures(selectedPlan);
 
@@ -81,14 +84,25 @@ const GiftForm = ({ theme, themeConfig, onComplete }: GiftFormProps) => {
     }
 
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    // Cria URLs para preview
+    const newPhotoUrls = imageFiles.map(file => URL.createObjectURL(file));
+    
     setUploadedPhotos(prev => [...prev, ...imageFiles]);
+    setPhotoUrls(prev => [...prev, ...newPhotoUrls]);
   };
 
   /**
    * Remove foto da lista
    */
   const removePhoto = (index: number) => {
+    // Revoga a URL para liberar memória
+    if (photoUrls[index]) {
+      URL.revokeObjectURL(photoUrls[index]);
+    }
+    
     setUploadedPhotos(prev => prev.filter((_, i) => i !== index));
+    setPhotoUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   /**
@@ -100,16 +114,21 @@ const GiftForm = ({ theme, themeConfig, onComplete }: GiftFormProps) => {
       return;
     }
 
-    // Navega para a página final com QR Code
+    // Navega para o checkout
     const finalGiftData = {
       ...formData,
       spotifyTrack: selectedSpotifyTrack,
       photos: uploadedPhotos,
+      photoUrls: photoUrls,
+      customizationData: customizationData,
       isFinalized: true
     };
 
-    navigate('/preview-presente', { 
-      state: { giftData: finalGiftData, showQR: true }
+    navigate('/checkout', { 
+      state: { 
+        giftData: finalGiftData,
+        plan: selectedPlan
+      }
     });
   };
 
@@ -125,8 +144,16 @@ const GiftForm = ({ theme, themeConfig, onComplete }: GiftFormProps) => {
     }
 
     // Navega para a página de preview com os dados
+    const finalGiftData = {
+      ...formData,
+      spotifyTrack: selectedSpotifyTrack,
+      photos: uploadedPhotos,
+      photoUrls: photoUrls,
+      customizationData: customizationData
+    };
+
     navigate('/preview-presente', { 
-      state: { giftData: formData }
+      state: { giftData: finalGiftData }
     });
   };
 
@@ -147,16 +174,16 @@ const GiftForm = ({ theme, themeConfig, onComplete }: GiftFormProps) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div className="max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         
         {/* Formulário de personalização */}
-        <Card className="p-8">
+        <Card className="p-8 xl:col-span-2">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-foreground mb-2">
+            <h2 className="text-2xl font-bold text-foreground mb-2 animate-fade-in">
               Personalize seu {themeConfig.title}
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground animate-fade-in" style={{ animationDelay: '0.1s' }}>
               Preencha os detalhes para criar uma experiência única
             </p>
           </div>
@@ -254,12 +281,12 @@ const GiftForm = ({ theme, themeConfig, onComplete }: GiftFormProps) => {
                   Adicionar Fotos
                 </Button>
                 
-                {uploadedPhotos.length > 0 && (
+                {photoUrls.length > 0 && (
                   <div className="grid grid-cols-3 gap-2">
-                    {uploadedPhotos.map((photo, index) => (
+                    {photoUrls.map((photoUrl, index) => (
                       <div key={index} className="relative group">
                         <img
-                          src={URL.createObjectURL(photo)}
+                          src={photoUrl}
                           alt={`Foto ${index + 1}`}
                           className="w-full h-20 object-cover rounded border"
                         />
@@ -330,10 +357,10 @@ const GiftForm = ({ theme, themeConfig, onComplete }: GiftFormProps) => {
             </div>
 
         {/* Botões de ação */}
-        <div className="flex gap-4 pt-6">
+        <div className="flex flex-col sm:flex-row gap-4 pt-6">
           <Button
             type="submit"
-            className="flex-1 bg-gradient-primary hover:opacity-90 flex items-center gap-2"
+            className="flex-1 bg-gradient-primary hover:opacity-90 flex items-center gap-2 transition-all duration-200 hover:scale-105"
           >
             Ver Preview Final
           </Button>
@@ -341,7 +368,7 @@ const GiftForm = ({ theme, themeConfig, onComplete }: GiftFormProps) => {
             type="button"
             onClick={generateQRCode}
             variant="outline"
-            className="flex-1 flex items-center gap-2 hover:bg-primary/10"
+            className="flex-1 flex items-center gap-2 hover:bg-primary/10 transition-all duration-200 hover:scale-105"
           >
             <QrCode className="w-4 h-4" />
             Gerar QR Code
@@ -352,63 +379,170 @@ const GiftForm = ({ theme, themeConfig, onComplete }: GiftFormProps) => {
         </Card>
 
         {/* Painel de personalização e preview */}
-        <div className="space-y-6">
+        <div className="space-y-6 xl:col-span-1">
           
           {/* Personalização (aberto por padrão) */}
           {showCustomizer && (
-            <GiftCustomizer
-              giftData={formData}
-              onUpdate={(updates) => {
-                setFormData(prev => ({ ...prev, backgroundColor: updates.backgroundColor, textColor: updates.textColor }));
-              }}
-            />
+            <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <GiftCustomizer
+                giftData={{...formData, ...customizationData}}
+                onUpdate={(updates) => {
+                  setCustomizationData(updates);
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    backgroundColor: updates.backgroundColor || prev.backgroundColor, 
+                    textColor: updates.textColor || prev.textColor 
+                  }));
+                }}
+              />
+            </div>
           )}
 
           {/* Preview em tempo real */}
-          <Card className="p-8">
+          <Card className="p-6 animate-fade-in" style={{ animationDelay: '0.3s' }}>
             <h3 className="text-xl font-bold text-foreground mb-4">Preview do Presente</h3>
             <div
-              className="rounded-lg p-6 min-h-[300px] flex flex-col justify-center items-center text-center transition-all duration-300"
+              className="rounded-lg p-6 min-h-[400px] flex flex-col justify-center items-center text-center transition-all duration-300 relative overflow-hidden"
               style={{
-                backgroundColor: formData.backgroundColor,
-                color: formData.textColor
+                // Fundo
+                backgroundColor: customizationData.backgroundType === 'gradient' 
+                  ? `linear-gradient(${customizationData.gradientDirection || '135deg'}, ${(customizationData.gradientColors || ['#ff6b9d', '#ff8fab']).join(', ')})`
+                  : formData.backgroundColor,
+                color: formData.textColor,
+                
+                // Tipografia
+                fontFamily: customizationData.fontFamily || 'Inter',
+                fontSize: `${customizationData.fontSize || 16}px`,
+                lineHeight: customizationData.lineHeight || 1.6,
+                letterSpacing: `${customizationData.letterSpacing || 0}px`,
+                textAlign: customizationData.textAlignment || 'center',
+                textTransform: customizationData.textTransform || 'none',
+                
+                // Layout
+                padding: `${customizationData.padding || 24}px`,
+                margin: `${customizationData.margin || 16}px`,
+                borderRadius: `${customizationData.borderRadius || 12}px`,
+                
+                // Bordas
+                borderStyle: customizationData.borderStyle || 'none',
+                borderWidth: `${customizationData.borderWidth || 0}px`,
+                borderColor: customizationData.borderColor || '#000000',
+                
+                // Sombras
+                boxShadow: customizationData.textShadow 
+                  ? `0 ${customizationData.textShadowBlur || 2}px ${customizationData.textShadowBlur || 2}px ${customizationData.textShadowColor || '#000000'}, 0 ${customizationData.shadowIntensity || 30}px 60px rgba(0,0,0,0.3)`
+                  : `0 ${customizationData.shadowIntensity || 30}px 60px rgba(0,0,0,0.3)`,
+                
+                // Filtros
+                filter: `
+                  brightness(${customizationData.brightness || 100}%) 
+                  contrast(${customizationData.contrast || 100}%) 
+                  saturate(${customizationData.saturation || 100}%) 
+                  hue-rotate(${customizationData.hue || 0}deg) 
+                  sepia(${customizationData.sepia || 0}%) 
+                  blur(${customizationData.blurEffect || 0}px)
+                `,
+                
+                // Opacidade
+                opacity: customizationData.backgroundOpacity || 1,
+                
+                // Posicionamento
+                justifyContent: customizationData.textPosition === 'top' ? 'flex-start' : 
+                               customizationData.textPosition === 'bottom' ? 'flex-end' : 'center',
+                
+                // Espaçamento
+                gap: `${customizationData.elementSpacing || 20}px`
               }}
             >
-              {formData.recipientName && (
-                <h2 className="text-2xl font-bold mb-4">
-                  Para {formData.recipientName}
-                </h2>
-              )}
-              
-              {formData.message && (
-                <p className="text-lg leading-relaxed mb-6 max-w-md">
-                  {formData.message}
-                </p>
-              )}
-              
-              {formData.senderName && (
-                <p className="text-lg font-medium">
-                  Com amor, {formData.senderName}
-                </p>
-              )}
-              
-              {uploadedPhotos.length > 0 && (
-                <div className="mt-4 text-sm opacity-70">
-                  {uploadedPhotos.length} foto{uploadedPhotos.length !== 1 ? 's' : ''} adicionada{uploadedPhotos.length !== 1 ? 's' : ''}
+              {/* Efeito de partículas no fundo */}
+              {customizationData.particleEffect && customizationData.particleEffect !== 'none' && (
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="w-full h-full opacity-20 text-2xl">
+                    {customizationData.particleEffect === 'hearts' && '💕💖💗💝💞💕💖💗💝💞💕💖💗💝💞'}
+                    {customizationData.particleEffect === 'confetti' && '🎉🎊🎈🎁🎂🎉🎊🎈🎁🎂🎉🎊🎈🎁🎂'}
+                    {customizationData.particleEffect === 'sparkles' && '✨⭐🌟💫✨⭐🌟💫✨⭐🌟💫✨⭐🌟💫'}
+                    {customizationData.particleEffect === 'stars' && '⭐🌟✨💫⭐🌟✨💫⭐🌟✨💫⭐🌟✨💫'}
+                    {customizationData.particleEffect === 'snow' && '❄️❅❆❄️❅❆❄️❅❆❄️❅❆❄️❅❆'}
+                    {customizationData.particleEffect === 'leaves' && '🍃🍂🍁🍃🍂🍁🍃🍂🍁🍃🍂🍁🍃🍂🍁'}
+                    {customizationData.particleEffect === 'bubbles' && '🫧💧🫧💧🫧💧🫧💧🫧💧🫧💧🫧💧🫧'}
+                  </div>
                 </div>
               )}
 
-              {selectedSpotifyTrack && (
-                <div className="mt-4 text-sm opacity-70">
-                  ♪ {selectedSpotifyTrack.name}
+              {/* Elementos decorativos */}
+              {customizationData.decorativeElements && customizationData.decorativeElements.length > 0 && (
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="w-full h-full opacity-30 text-lg">
+                    {customizationData.decorativeElements.includes('hearts') && '💕💖💗💝💞'}
+                    {customizationData.decorativeElements.includes('stars') && '⭐🌟✨💫⭐'}
+                    {customizationData.decorativeElements.includes('flowers') && '🌸🌺🌻🌷🌹'}
+                    {customizationData.decorativeElements.includes('butterflies') && '🦋🦋🦋🦋🦋'}
+                    {customizationData.decorativeElements.includes('geometric') && '🔷🔶🔹🔸🔷'}
+                    {customizationData.decorativeElements.includes('vintage') && '📜📜📜📜📜'}
+                  </div>
                 </div>
               )}
-              
-              {!formData.recipientName && !formData.message && !formData.senderName && (
-                <p className="text-center opacity-70">
-                  Preencha o formulário para ver o preview
-                </p>
-              )}
+
+              <div className="relative z-10">
+                {formData.recipientName && (
+                  <h2 className="text-2xl font-bold mb-4">
+                    Para {formData.recipientName}
+                  </h2>
+                )}
+                
+                {formData.message && (
+                  <p className="text-lg leading-relaxed mb-6 max-w-md">
+                    {formData.message}
+                  </p>
+                )}
+                
+                {/* Galeria de fotos em miniatura */}
+                {photoUrls.length > 0 && (
+                  <div className="mt-4 mb-4">
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {photoUrls.slice(0, 3).map((photoUrl, index) => (
+                        <div 
+                          key={index} 
+                          className="w-12 h-12 rounded border-2 border-white/30 overflow-hidden"
+                          style={{
+                            borderColor: customizationData.accentColor || formData.backgroundColor
+                          }}
+                        >
+                          <img
+                            src={photoUrl}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                      {photoUrls.length > 3 && (
+                        <div className="w-12 h-12 rounded border-2 border-white/30 bg-white/20 flex items-center justify-center text-xs font-bold">
+                          +{photoUrls.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {formData.senderName && (
+                  <p className="text-lg font-medium">
+                    Com amor, {formData.senderName}
+                  </p>
+                )}
+                
+                {selectedSpotifyTrack && (
+                  <div className="mt-4 text-sm opacity-70 flex items-center justify-center gap-2">
+                    <span>♪</span>
+                    <span>{selectedSpotifyTrack.name}</span>
+                  </div>
+                )}
+                
+                {!formData.recipientName && !formData.message && !formData.senderName && (
+                  <p className="text-center opacity-70">
+                    Preencha o formulário para ver o preview
+                  </p>
+                )}
+              </div>
             </div>
           </Card>
 

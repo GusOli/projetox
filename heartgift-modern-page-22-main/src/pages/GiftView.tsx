@@ -7,6 +7,7 @@ import CoupleGiftLayout from '@/components/gift-layouts/CoupleGiftLayout';
 import BirthdayGiftLayout from '@/components/gift-layouts/BirthdayGiftLayout';
 import CorporateGiftLayout from '@/components/gift-layouts/CorporateGiftLayout';
 import FloatingHearts from '@/components/FloatingHearts';
+import { getGiftById, FirebaseGiftData } from '@/services/firebase';
 
 /**
  * Interface para dados do presente recebidos via QR code
@@ -59,9 +60,10 @@ const GiftView = () => {
    * 
    * Tenta carregar os dados de várias fontes:
    * 1. Estado da navegação (quando vem do preview)
-   * 2. localStorage (dados salvos localmente)
-   * 3. URL params decodificados (dados do QR code)
-   * 4. Dados de exemplo como fallback
+   * 2. Firebase usando ID (dados do QR code)
+   * 3. localStorage (dados salvos localmente)
+   * 4. URL params decodificados (dados do QR code)
+   * 5. Dados de exemplo como fallback
    */
   useEffect(() => {
     const loadGiftData = async () => {
@@ -73,16 +75,42 @@ const GiftView = () => {
           data = location.state.giftData as GiftViewData;
           console.log('📦 Dados carregados do estado da navegação');
         }
-        // Segunda tentativa: localStorage usando ID
+        // Segunda tentativa: Firebase usando ID (para QR codes)
         else if (id) {
+          try {
+            const firebaseData = await getGiftById(id);
+            if (firebaseData) {
+              data = {
+                id: firebaseData.id,
+                theme: firebaseData.theme as 'couple' | 'birthday' | 'corporate',
+                recipientName: firebaseData.recipientName,
+                senderName: firebaseData.senderName,
+                message: firebaseData.message,
+                specialDate: firebaseData.specialDate,
+                backgroundColor: firebaseData.backgroundColor,
+                textColor: firebaseData.textColor,
+                photos: firebaseData.photos ? firebaseData.photos.map(url => ({ url } as any)) : [],
+                customizationData: firebaseData.customizationData,
+                spotifyTrack: firebaseData.spotifyTrack
+              } as GiftViewData;
+              console.log('📦 Dados carregados do Firebase');
+            }
+          } catch (firebaseError) {
+            console.log('📦 Erro ao carregar do Firebase, tentando localStorage:', firebaseError);
+          }
+        }
+        
+        // Terceira tentativa: localStorage usando ID
+        if (!data && id) {
           const storedData = localStorage.getItem(`gift_${id}`);
           if (storedData) {
             data = JSON.parse(storedData) as GiftViewData;
             console.log('📦 Dados carregados do localStorage');
           }
         }
-        // Terceira tentativa: dados codificados na URL (para QR codes)
-        else {
+        
+        // Quarta tentativa: dados codificados na URL (para QR codes)
+        if (!data) {
           const urlParams = new URLSearchParams(window.location.search);
           const encodedData = urlParams.get('data');
           if (encodedData) {

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Heart, Gift, Building, Crown } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { usePlan } from '@/contexts/PlanContext';
@@ -28,6 +28,10 @@ export interface GiftData {
   musicFile?: File;
   backgroundColor: string;
   textColor: string;
+  spotifyTrack?: any;
+  photos?: File[];
+  photoUrls?: string[];
+  customizationData?: any;
 }
 
 /**
@@ -36,11 +40,25 @@ export interface GiftData {
  */
 const CreateGift = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { selectedPlan, getPlanFeatures } = usePlan();
   const [selectedTheme, setSelectedTheme] = useState<ThemeType | null>(null);
   const [step, setStep] = useState<'theme' | 'form' | 'preview'>('theme');
+  const [editingData, setEditingData] = useState<GiftData | null>(null);
 
   const planFeatures = getPlanFeatures(selectedPlan);
+
+  /**
+   * Verifica se está continuando uma edição
+   */
+  useEffect(() => {
+    if (location.state?.giftData && location.state?.continueEditing) {
+      const data = location.state.giftData as GiftData;
+      setEditingData(data);
+      setSelectedTheme(data.theme);
+      setStep('form');
+    }
+  }, [location.state]);
 
   /**
    * Navega de volta para a página inicial
@@ -150,22 +168,22 @@ const CreateGift = () => {
       <FloatingHearts />
       
       {/* Header com botão voltar */}
-      <header className="relative z-10 p-6 border-b border-border/10">
+      <header className="relative z-10 p-6 border-b border-border/10 bg-background/80 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Button 
             variant="ghost" 
             onClick={handleGoBack}
-            className="flex items-center gap-2 text-foreground hover:text-primary"
+            className="flex items-center gap-2 text-foreground hover:text-primary transition-colors duration-200"
           >
             <ArrowLeft size={20} />
             Voltar
           </Button>
           
           <div className="text-center">
-            <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent animate-fade-in">
               {step === 'theme' ? 'Escolha seu Tema' : 'Personalize seu Presente'}
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 animate-fade-in" style={{ animationDelay: '0.1s' }}>
               {step === 'theme' 
                 ? 'Selecione o estilo perfeito para sua ocasião especial'
                 : 'Preencha os detalhes para criar uma experiência única'
@@ -175,9 +193,9 @@ const CreateGift = () => {
 
           {/* Informação do plano atual */}
           <div className="text-right">
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-sm bg-primary/10 px-3 py-1 rounded-full">
               <planInfo.icon className={`w-4 h-4 ${planInfo.color}`} />
-              <span className="text-muted-foreground">{planInfo.name}</span>
+              <span className="text-muted-foreground font-medium">{planInfo.name}</span>
             </div>
           </div>
         </div>
@@ -190,23 +208,29 @@ const CreateGift = () => {
           {/* Etapa 1: Seleção de tema */}
           {step === 'theme' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-              {(Object.keys(themeConfigs) as ThemeType[]).map((theme) => (
-                <ThemeCard
+              {(Object.keys(themeConfigs) as ThemeType[]).map((theme, index) => (
+                <div 
                   key={theme}
-                  theme={theme}
-                  config={themeConfigs[theme]}
-                  onSelect={handleThemeSelect}
-                />
+                  className="animate-fade-in-up"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <ThemeCard
+                    theme={theme}
+                    config={themeConfigs[theme]}
+                    onSelect={handleThemeSelect}
+                  />
+                </div>
               ))}
             </div>
           )}
 
           {/* Etapa 2: Formulário de personalização */}
           {step === 'form' && selectedTheme && (
-            <div className="mt-8">
+            <div className="mt-8 animate-fade-in">
               <GiftForm 
                 theme={selectedTheme}
                 themeConfig={themeConfigs[selectedTheme]}
+                initialData={editingData}
                 onComplete={(data) => {
                   console.log('Gift created:', data);
                   // Aqui você pode implementar a lógica de salvar/gerar o presente

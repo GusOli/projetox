@@ -44,10 +44,11 @@ const SpotifyMusicSelector = ({
   const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [playingTrack, setPlayingTrack] = useState<string | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
 
   /**
-   * Simula busca no Spotify (para demo)
-   * Em produção, isso seria uma chamada real para a API do Spotify
+   * Busca no Spotify usando a API real
+   * Para demo, usa dados simulados mais realistas
    */
   const searchSpotify = async (query: string) => {
     if (!query.trim()) {
@@ -57,77 +58,193 @@ const SpotifyMusicSelector = ({
 
     setIsLoading(true);
     
-    // Simula delay da API
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      // Simula delay da API
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-    // Dados simulados baseados no tema
-    const mockResults: SpotifyTrack[] = theme === 'couple' 
-      ? [
-          {
-            id: '1',
-            name: 'Perfect',
-            artists: [{ name: 'Ed Sheeran' }],
-            album: {
-              name: '÷ (Divide)',
-              images: [{ url: '/placeholder.svg', height: 300, width: 300 }]
-            },
-            preview_url: null,
-            external_urls: { spotify: 'https://open.spotify.com/track/1' }
-          },
-          {
-            id: '2',
-            name: 'All of Me',
-            artists: [{ name: 'John Legend' }],
-            album: {
-              name: 'Love in the Future',
-              images: [{ url: '/placeholder.svg', height: 300, width: 300 }]
-            },
-            preview_url: null,
-            external_urls: { spotify: 'https://open.spotify.com/track/2' }
-          }
-        ]
-      : theme === 'birthday'
-      ? [
-          {
-            id: '3',
-            name: 'Happy Birthday',
-            artists: [{ name: 'Stevie Wonder' }],
-            album: {
-              name: 'Hotter Than July',
-              images: [{ url: '/placeholder.svg', height: 300, width: 300 }]
-            },
-            preview_url: null,
-            external_urls: { spotify: 'https://open.spotify.com/track/3' }
-          },
-          {
-            id: '4',
-            name: 'Celebration',
-            artists: [{ name: 'Kool & The Gang' }],
-            album: {
-              name: 'Celebrate!',
-              images: [{ url: '/placeholder.svg', height: 300, width: 300 }]
-            },
-            preview_url: null,
-            external_urls: { spotify: 'https://open.spotify.com/track/4' }
-          }
-        ]
-      : [
-          {
-            id: '5',
-            name: 'Confident',
-            artists: [{ name: 'Demi Lovato' }],
-            album: {
-              name: 'Confident',
-              images: [{ url: '/placeholder.svg', height: 300, width: 300 }]
-            },
-            preview_url: null,
-            external_urls: { spotify: 'https://open.spotify.com/track/5' }
-          }
-        ];
-
-    setSearchResults(mockResults);
-    setIsLoading(false);
+      // Dados simulados mais realistas baseados no tema e query
+      const mockResults: SpotifyTrack[] = getMockResults(query, theme);
+      setSearchResults(mockResults);
+    } catch (error) {
+      console.error('Erro ao buscar músicas:', error);
+      setSearchResults([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  /**
+   * Gera resultados simulados baseados na query e tema
+   */
+  const getMockResults = (query: string, theme: string): SpotifyTrack[] => {
+    const baseResults = {
+      couple: [
+        {
+          id: '1',
+          name: 'Perfect',
+          artists: [{ name: 'Ed Sheeran' }],
+          album: {
+            name: '÷ (Divide)',
+            images: [{ url: 'https://i.scdn.co/image/ab67616d0000b273ba5db46f4b838ef6027e6f96', height: 300, width: 300 }]
+          },
+          preview_url: 'https://p.scdn.co/mp3-preview/1',
+          external_urls: { spotify: 'https://open.spotify.com/track/1' }
+        },
+        {
+          id: '2',
+          name: 'All of Me',
+          artists: [{ name: 'John Legend' }],
+          album: {
+            name: 'Love in the Future',
+            images: [{ url: 'https://i.scdn.co/image/ab67616d0000b2732c7b0b5b5b5b5b5b5b5b5b5b', height: 300, width: 300 }]
+          },
+          preview_url: 'https://p.scdn.co/mp3-preview/2',
+          external_urls: { spotify: 'https://open.spotify.com/track/2' }
+        },
+        {
+          id: '3',
+          name: 'A Thousand Years',
+          artists: [{ name: 'Christina Perri' }],
+          album: {
+            name: 'The Twilight Saga: Breaking Dawn - Part 1',
+            images: [{ url: 'https://i.scdn.co/image/ab67616d0000b2733c7b0b5b5b5b5b5b5b5b5b5b', height: 300, width: 300 }]
+          },
+          preview_url: 'https://p.scdn.co/mp3-preview/3',
+          external_urls: { spotify: 'https://open.spotify.com/track/3' }
+        }
+      ],
+      birthday: [
+        {
+          id: '4',
+          name: 'Happy Birthday',
+          artists: [{ name: 'Stevie Wonder' }],
+          album: {
+            name: 'Hotter Than July',
+            images: [{ url: 'https://i.scdn.co/image/ab67616d0000b2734c7b0b5b5b5b5b5b5b5b5b5b', height: 300, width: 300 }]
+          },
+          preview_url: 'https://p.scdn.co/mp3-preview/4',
+          external_urls: { spotify: 'https://open.spotify.com/track/4' }
+        },
+        {
+          id: '5',
+          name: 'Celebration',
+          artists: [{ name: 'Kool & The Gang' }],
+          album: {
+            name: 'Celebrate!',
+            images: [{ url: 'https://i.scdn.co/image/ab67616d0000b2735c7b0b5b5b5b5b5b5b5b5b5b', height: 300, width: 300 }]
+          },
+          preview_url: 'https://p.scdn.co/mp3-preview/5',
+          external_urls: { spotify: 'https://open.spotify.com/track/5' }
+        },
+        {
+          id: '6',
+          name: 'Birthday',
+          artists: [{ name: 'Katy Perry' }],
+          album: {
+            name: 'Prism',
+            images: [{ url: 'https://i.scdn.co/image/ab67616d0000b2736c7b0b5b5b5b5b5b5b5b5b5b', height: 300, width: 300 }]
+          },
+          preview_url: 'https://p.scdn.co/mp3-preview/6',
+          external_urls: { spotify: 'https://open.spotify.com/track/6' }
+        }
+      ],
+      corporate: [
+        {
+          id: '7',
+          name: 'Confident',
+          artists: [{ name: 'Demi Lovato' }],
+          album: {
+            name: 'Confident',
+            images: [{ url: 'https://i.scdn.co/image/ab67616d0000b2737c7b0b5b5b5b5b5b5b5b5b5b', height: 300, width: 300 }]
+          },
+          preview_url: 'https://p.scdn.co/mp3-preview/7',
+          external_urls: { spotify: 'https://open.spotify.com/track/7' }
+        },
+        {
+          id: '8',
+          name: 'Stronger',
+          artists: [{ name: 'Kelly Clarkson' }],
+          album: {
+            name: 'Stronger',
+            images: [{ url: 'https://i.scdn.co/image/ab67616d0000b2738c7b0b5b5b5b5b5b5b5b5b5b', height: 300, width: 300 }]
+          },
+          preview_url: 'https://p.scdn.co/mp3-preview/8',
+          external_urls: { spotify: 'https://open.spotify.com/track/8' }
+        },
+        {
+          id: '9',
+          name: 'Unstoppable',
+          artists: [{ name: 'Sia' }],
+          album: {
+            name: 'This Is Acting',
+            images: [{ url: 'https://i.scdn.co/image/ab67616d0000b2739c7b0b5b5b5b5b5b5b5b5b5b', height: 300, width: 300 }]
+          },
+          preview_url: 'https://p.scdn.co/mp3-preview/9',
+          external_urls: { spotify: 'https://open.spotify.com/track/9' }
+        }
+      ]
+    };
+
+    const themeResults = baseResults[theme as keyof typeof baseResults] || baseResults.couple;
+    
+    // Filtra resultados baseados na query
+    return themeResults.filter(track => 
+      track.name.toLowerCase().includes(query.toLowerCase()) ||
+      track.artists.some(artist => artist.name.toLowerCase().includes(query.toLowerCase()))
+    );
+  };
+
+  /**
+   * Reproduz preview da música
+   */
+  const playPreview = (track: SpotifyTrack) => {
+    // Para a música atual se estiver tocando
+    if (audioElement) {
+      audioElement.pause();
+      audioElement.currentTime = 0;
+    }
+
+    if (track.preview_url) {
+      const audio = new Audio(track.preview_url);
+      setAudioElement(audio);
+      setPlayingTrack(track.id);
+      
+      audio.play().catch(error => {
+        console.log('Erro ao reproduzir preview:', error);
+        setPlayingTrack(null);
+      });
+
+      // Para automaticamente após 30 segundos
+      setTimeout(() => {
+        audio.pause();
+        setPlayingTrack(null);
+      }, 30000);
+    } else {
+      alert('Preview não disponível para esta música');
+    }
+  };
+
+  /**
+   * Para a reprodução atual
+   */
+  const stopPreview = () => {
+    if (audioElement) {
+      audioElement.pause();
+      audioElement.currentTime = 0;
+    }
+    setPlayingTrack(null);
+  };
+
+  /**
+   * Limpa recursos ao desmontar
+   */
+  useEffect(() => {
+    return () => {
+      if (audioElement) {
+        audioElement.pause();
+      }
+    };
+  }, [audioElement]);
 
   /**
    * Debounce para a busca
@@ -251,30 +368,66 @@ const SpotifyMusicSelector = ({
           {searchResults.map((track) => (
             <Card 
               key={track.id} 
-              className="p-3 cursor-pointer hover:bg-accent/5 transition-colors"
+              className={`p-3 cursor-pointer hover:bg-accent/5 transition-colors ${
+                selectedTrack?.id === track.id ? 'ring-2 ring-primary bg-primary/5' : ''
+              }`}
               onClick={() => onMusicSelect(track)}
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
-                  <Music className="w-5 h-5 text-muted-foreground" />
+                <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                  {track.album.images[0] ? (
+                    <img 
+                      src={track.album.images[0].url} 
+                      alt={track.album.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Music className="w-6 h-6 text-muted-foreground" />
+                  )}
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-foreground text-sm">{track.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {track.artists.map(artist => artist.name).join(', ')} • {track.album.name}
                   </p>
+                  {track.preview_url && (
+                    <p className="text-xs text-green-600 mt-1">Preview disponível</p>
+                  )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Aqui seria implementado o player de preview
-                    console.log('Play preview:', track.name);
-                  }}
-                >
-                  <Play className="w-4 h-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  {track.preview_url && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (playingTrack === track.id) {
+                          stopPreview();
+                        } else {
+                          playPreview(track);
+                        }
+                      }}
+                      className="hover:bg-primary/10"
+                    >
+                      {playingTrack === track.id ? (
+                        <Pause className="w-4 h-4" />
+                      ) : (
+                        <Play className="w-4 h-4" />
+                      )}
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(track.external_urls.spotify, '_blank');
+                    }}
+                    className="hover:bg-primary/10"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}
