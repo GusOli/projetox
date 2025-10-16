@@ -1,0 +1,221 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* HeartGift Design System - Romantic Love Theme */
+
+@layer base {
+  :root {
+    /* Base colors */
+    --background: 220 15% 5%;
+    --foreground: 0 0% 98%;
+
+    /* Card colors */
+    --card: 220 15% 8%;
+    --card-foreground: 0 0% 95%;
+
+    /* Popover colors */
+    --popover: 220 15% 8%;
+    --popover-foreground: 0 0% 95%;
+
+    /* Primary - Love Pink/Red */
+    --primary: 348 83% 47%;
+    --primary-foreground: 0 0% 98%;
+    --primary-soft: 348 100% 88%;
+
+    /* Secondary - Romantic Purple */
+    --secondary: 280 30% 20%;
+    --secondary-foreground: 0 0% 98%;
+
+    /* Muted tones */
+    --muted: 220 15% 15%;
+    --muted-foreground: 220 10% 60%;
+
+    /* Accent - Warm Rose */
+    --accent: 340 75% 55%;
+    --accent-foreground: 0 0% 98%;
+
+    /* Theme-specific colors */
+    --theme-couple: 348 83% 47%;
+    --theme-birthday: 43 96% 56%;
+    --theme-corporate: 239 84% 67%;
+
+    /* Destructive */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Borders and inputs */
+    --border: 220 15% 20%;
+    --input: 220 15% 15%;
+    --ring: 348 83% 47%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(348 83% 47%) 0%, hsl(320 70% 50%) 50%, hsl(280 60% 45%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(220 15% 5%) 0%, hsl(300 30% 8%) 50%, hsl(348 40% 15%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(220 15% 8%) 0%, hsl(300 20% 12%) 100%);
+    
+    /* Shadows */
+    --shadow-love: 0 10px 40px -10px hsl(348 83% 47% / 0.3);
+    --shadow-glow: 0 0 50px hsl(348 83% 47% / 0.2);
+    --shadow-card: 0 8px 32px -8px hsl(220 15% 5% / 0.6);
+
+    /* Border radius */
+    --radius: 1rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark mode uses same love theme */
+    --background: 220 15% 3%;
+    --foreground: 0 0% 95%;
+    --card: 220 15% 6%;
+    --card-foreground: 0 0% 92%;
+    --muted: 220 15% 12%;
+    --border: 220 15% 18%;
+    --input: 220 15% 12%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    background: var(--gradient-hero);
+    min-height: 100vh;
+  }
+
+  /* Custom animations */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+  }
+
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes glow {
+    from { box-shadow: var(--shadow-love); }
+    to { box-shadow: var(--shadow-glow); }
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+
+  /* Frame and text style classes */
+  .frame-classic {
+    border: 4px solid hsl(var(--border));
+    border-radius: 0.75rem;
+  }
+
+  .frame-elegant {
+    border: 3px double hsl(var(--primary));
+    border-radius: 1rem;
+    padding: 0.5rem;
+  }
+
+  .frame-modern {
+    border: 2px solid transparent;
+    background: linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+                var(--gradient-primary) border-box;
+    border-radius: 1rem;
+  }
+
+  .frame-vintage {
+    border: 6px ridge hsl(var(--accent));
+    border-radius: 0.5rem;
+  }
+
+  .frame-minimalist {
+    border: 1px solid hsl(var(--muted-foreground) / 0.3);
+    border-radius: 0.25rem;
+  }
+
+  .frame-ornate {
+    border: 5px groove hsl(var(--primary));
+    border-radius: 1.5rem;
+    box-shadow: inset 0 0 20px hsl(var(--primary) / 0.1);
+  }
+
+  /* Text style classes */
+  .text-romantic {
+    font-family: 'Georgia', serif;
+    font-style: italic;
+    letter-spacing: 0.025em;
+  }
+
+  .text-modern {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+  }
+
+  .text-playful {
+    font-family: 'Comic Sans MS', cursive;
+    font-weight: 500;
+  }
+
+  .text-elegant {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+  }
+
+  .text-bold {
+    font-family: 'Arial Black', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .text-classic {
+    font-family: 'Times New Roman', serif;
+    font-weight: 400;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--gradient-primary);
+    border-radius: 4px;
+  }
+}
